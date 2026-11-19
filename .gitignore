@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Datasets (downloaded automatically by torchvision)
+dataset/
+
+# Local outputs
+*.log
+outputs/
+runs/
+
+# 论文原文（IEEE 版权，不入库，引用见 README）
+Conditional_Denoising_Diffusion_Probabilistic_Models_for_Data_Reconstruction_Enhancement_in_Wireless_Communications.pdf
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

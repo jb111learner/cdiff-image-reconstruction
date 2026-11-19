@@ -1,0 +1,11 @@
+# Core
+torch>=1.10
+torchvision>=0.11
+
+# Model / training helpers
+einops>=0.6
+tqdm>=4.64
+
+# Data / visualization
+numpy>=1.21
+Pillow>=9.0
