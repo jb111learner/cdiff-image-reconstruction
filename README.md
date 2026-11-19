@@ -81,7 +81,10 @@ x_{t-1} = Ψ_x·x_t + Ψ_x̂·x̂ - Ψ_ε·ε_θ(x_t, x̂, t) + √δ̂_t·z
 ├── saved_train_models/            # 原始 DDPM 权重（1000 步）
 ├── denoising_results*.png         # 重建效果可视化
 ├── image_denoising_test.py        # 条件去噪训练 + 可视化入口
-└── image_test.py                  # 原始 DDPM 训练 + 采样入口
+├── image_test.py                  # 原始 DDPM 训练 + 采样入口
+├── evaluate.py                    # PSNR / SSIM 评测脚本
+├── requirements.txt
+└── LICENSE
 ```
 
 ## 环境依赖
@@ -147,12 +150,39 @@ MNIST：
 
 ![MNIST 重建对比](denoising_results.png)
 
-## 实现说明与已知限制
+## 评测
 
-- **信道模型**：为便于复现，使用「AWGN + 逐样本随机 SNR」等效替代论文中的 Sionna + 5G LDPC + 硬件损伤链路，因此本仓库关注的是**条件扩散重建模块本身**，不含完整通信链路仿真。
-- **训练标签**：`compute_loss()` 已按论文实现复合目标 `noise_condition`（同时包含残差 `x̂ - x0` 与高斯噪声），但当前训练仍以纯高斯噪声为标签；启用该目标是一个明确的改进方向。
-- **评测**：仓库目前只提供可视化对比，尚未内置 PSNR/SSIM 自动评测脚本，也没有与 VAE、DNN 接收机的对比曲线。
-- **EMA**：训练器中实现了 EMA 参数滑动更新，但保存与推理仍使用原始权重，EMA 权重尚未导出。
+`evaluate.py` 会在测试集上按指定 SNR 生成退化图，统计「退化图 PSNR」与「重建图 PSNR / SSIM」，直接给出增益，而不是靠看图估计：
+
+```bash
+# 200 步权重（默认配置）
+python evaluate.py --num-images 64 --snrs -5 0 5 10 --csv results_200.csv
+
+# 1000 步权重：注意同时指定 --timesteps 与 --beta-end
+python evaluate.py --timesteps 1000 --beta-end 0.02 \
+  --ckpt "saved_denoising_train_models/imageSize28_channels1_dimMults(1, 2, 4)_timeSteps1000_scheduleNamelinear_beta_schedule_weightScheduleNamelinear_lamda_schedule/BestModel.pth"
+```
+
+终端会逐行打印每个 SNR 的结果，并输出可直接粘进 README 或简历的 Markdown 表格（数值由实际运行产生）：
+
+| SNR (dB) | degraded PSNR | reconstructed PSNR | gain | SSIM |
+| --- | --- | --- | --- | --- |
+| -5.0 | 运行后填入 | 运行后填入 | 运行后填入 | 运行后填入 |
+
+注意：`--timesteps` 必须与权重匹配（200 步权重配 200、1000 步权重配 1000），否则噪声调度不一致，结果不可用。
+
+## 实现说明与 Roadmap
+
+- **信道模型**：使用「AWGN + 逐样本随机 SNR」等效替代论文中的 Sionna + 5G LDPC + 硬件损伤链路，本仓库聚焦条件扩散重建模块本身。
+  - Roadmap：接入 Sionna，补 16-QAM + 5G LDPC 的完整链路。
+- **训练标签**：`compute_loss()` 已实现复合目标 `noise_condition`（残差 `x̂ - x0` 与高斯噪声的线性组合），但当前训练仍以纯高斯噪声为标签。
+  - Roadmap：改用复合目标并做 PSNR/SSIM 对比，这是最直接的一次精度提升。
+- **评测**：已提供 `evaluate.py`（PSNR / SSIM / 增益），但尚无与 VAE、DNN 接收机的横向对比。
+  - Roadmap：补 VAE 基线，形成论文式的对比曲线。
+- **EMA**：训练器实现了 EMA 参数滑动更新，但保存与推理仍使用原始权重。
+  - Roadmap：导出 EMA 权重并验证其增益。
+- **采样效率**：目前固定跑满 `T` 步。
+  - Roadmap：接入 DDIM / DPM-Solver 少步采样，并给出「步数–质量」曲线。
 
 ## 参考
 
@@ -164,4 +194,4 @@ MNIST：
 
 ## License
 
-本仓库未附带开源许可证；如需复用请先联系作者。
+[MIT](LICENSE) © 2026 jb111learner
